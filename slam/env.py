@@ -19,14 +19,14 @@ class build_environment:
         self.red = (255,0,0)
         self.white = (255,255,255)
 
-    def ad2_pos(self, distance, angle, robot_position):
+    def angle_distance_to_position(self, distance, angle, robot_position):
         x = distance * math.cos(angle) + robot_position[0]
         y = -distance * math.sin(angle) + robot_position[1]
         return (int(x), int(y))
     
     def data_storage(self, data):
         for element in data:
-            point = self.ad2_pos(element[0], element[1], element[2])
+            point = self.angle_distance_to_position(element[0], element[1], element[2])
             if point not in self.point_cloud:
                 self.point_cloud.append(point)
 
