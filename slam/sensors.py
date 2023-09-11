@@ -1,6 +1,45 @@
-class LIDAR:
-    def __init__(self, name="Default LIDAR"):
-        self.name = name
+import pygame
+import math
+import numpy as np
 
-    def print_info(self):
-        print(f"This is a LIDAR sensor named: {self.name}")
+def add_uncertainty(distance, angle, sigma):
+    mean = np.array([distance, angle])
+    covariance = np.diag(sigma ** 2) # diag because distance and angle are uncorrelated
+    distance, angle = np.random.multivariate_normal(mean, covariance)
+    distance = max(distance, 0)
+    angle = max(angle, 0)
+    return [distance, angle]
+
+class laser_sensor:
+    def __init__(self, range, map, uncertainty):
+        self.range = range
+        self.speed = 4 # rounds per secs
+        self.sigma = np.array([uncertainty[0], uncertainty[1]])
+        self.position = (0,0)
+        self.map = map
+        self.w, self.h = pygame.display.get_surface().get_size()
+        self.sensed_obstacles = []
+
+    def distance(self, obstacle_position):
+        px = (obstacle_position[0] - self.position[0])**2
+        py = (obstacle_position[1] - self.position[1])**2
+        return math.sqrt(px+py)
+    
+    def sense_obstacles(self):
+        data = []
+        x1, y1 = self.position[0], self.position[1]
+        for angle in np.linspace(0, 2*math.pi, 60, False):
+            x2, y2 = (x1 + self.range * math.cos(angle), y1 - self.range * math.sin(angle))
+            for i in range(0,100):
+                u = i / 100
+                x = int(x2 * u + x1 * (1-u))
+                y = int(y2 * u + y1 * (1-u))
+                if 0<x<self.w and 0<y<self.h:
+                    color = self.map.get_at((x,y))
+                    if(color[0], color[1], color[2]) == (0,0,0): # check if color is black for obstacle
+                        distance = self.distance((x,y))
+                        output = add_uncertainty(distance, angle, self.sigma)
+                        output.append(self.position)
+                        data.append(output)
+                        break
+        return data
