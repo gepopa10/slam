@@ -3,6 +3,9 @@ import math
 from fractions import Fraction
 from scipy.odr import * # orthogonal distance regression
 
+# landmarks
+landmarks = []
+
 class features_detection:
     def __init__(self):
        self.epsilon = 10
@@ -10,6 +13,7 @@ class features_detection:
        self.snum = 6 # number of points in the seed segment
        self.pmin = 20 # minimum number of points a seed segment should have
        self.gmax = 20
+       self.features = []
        self.seed_segments = []
        self.line_segments = []
        self.laser_points = []
@@ -189,6 +193,43 @@ class features_detection:
             self.line_segments.append((self.laser_points[pb + 1][0], self.laser_points[pf - 1][0]))
             return [self.laser_points[pb:pf], self.two_points, (self.laser_points[pb + 1][0], self.laser_points[pf - 1][0]), pf , line_eq, (m, b)]
         return False
+
+    def line_features_to_point(self):
+        new_representation = [] # the new representation of the features
+
+        for feature in self.features:
+            projection = self.projection_point_to_line((0,0), feature[0][0], feature[0][1])
+            new_representation.append([feature[0], feature[1], projection])
+
+        return new_representation
+
+    def landmark_association(self, landmarks_input):
+        threshold = 10
+        for l in landmarks_input:
+            flag = False
+            for i, landmark in enumerate(landmarks):
+                dist = self.distance_point_to_point(l[2], landmark[2])
+                if dist < threshold:
+                    if not self.is_overlap(l[1], landmark[1]):
+                        continue
+                    else:
+                        landmarks.pop(i)
+                        landmarks.insert(i, l)
+                        flag = True
+                        break
+            if not flag:
+                landmarks.append(l)
+
+    def is_overlap(self, seg1, seg2):
+        length1 = self.distance_point_to_point(seg1[0], seg1[1])
+        length2 = self.distance_point_to_point(seg2[0], seg2[1])
+        center1 = ((seg1[0][0] + seg1[1][0]) / 2, (seg1[0][1] + seg1[1][1]) / 2)
+        center2 = ((seg2[0][0] + seg2[1][0]) / 2, (seg2[0][1] + seg2[1][1]) / 2)
+        dist = self.distance_point_to_point(center1, center2)
+        if dist > (length1 + length2) / 2:
+            return False
+        else:
+            return True
 
 
 

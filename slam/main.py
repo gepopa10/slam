@@ -3,7 +3,7 @@ import pygame
 
 from slam.sensors import laser_sensor
 from slam.env import build_environment
-from slam.features_detection import features_detection
+from slam.features_detection import features_detection, landmarks
 
 def random_color():
     levels = range(32, 256, 32)
@@ -64,13 +64,19 @@ def main():
                         endpoints[0] = feature_map.projection_point_to_line(outermost[0], m, b)
                         endpoints[1] = feature_map.projection_point_to_line(outermost[1], m, b)
 
-                        color = random_color()
-                        for point in line_seg:
-                            environment.info_map.set_at((int(point[0][0]), int(point[0][1])), (0, 255, 0))
-                            pygame.draw.circle(environment.info_map, color, (int(point[0][0]), int(point[0][1])), 2.0)
-                        pygame.draw.line(environment.info_map, (255, 0, 0), endpoints[0], endpoints[1], 2)
+                        # color = random_color()
+                        # for point in line_seg:
+                        #     environment.info_map.set_at((int(point[0][0]), int(point[0][1])), (0, 255, 0))
+                        #     pygame.draw.circle(environment.info_map, color, (int(point[0][0]), int(point[0][1])), 2.0)
+                        feature_map.features.append([[m, b], endpoints])
+                        pygame.draw.line(environment.info_map, (0, 255, 0), endpoints[0], endpoints[1], 1)
 
                         environment.data_storage(sensor_data)
+
+                        feature_map.features = feature_map.line_features_to_point()
+                        feature_map.landmark_association(feature_map.features)
+                for landmark in landmarks:
+                    pygame.draw.line(environment.info_map, (0, 0, 255), landmark[1][0], landmark[1][1], 2)
             environment.map.blit(environment.info_map, (0,0))
             pygame.display.update()
 
